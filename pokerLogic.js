@@ -5,7 +5,7 @@ const GameState = {
   deck: [],
   playerHand: [],
   heldCards: [false, false, false, false, false],
-  balance: 10000,
+  balance: 15000,
   currentBet: 0,
   phase: 'IDLE',
   lastWin: null,
