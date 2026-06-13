@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cyberpunk Poker</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a1a;
+            --neon-cyan: #00f2ff;
+            --neon-pink: #ff007f;
+            --text-glow: 0 0 10px rgba(0, 242, 255, 0.7);
+            --border-glow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+
+        body { 
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%); 
+            color: #e0f7fa; 
+            font-family: 'Courier New', Courier, monospace; 
+            display: flex; justify-content: center; padding: 40px; 
+            min-height: 100vh; margin: 0;
+        }
+
+        .wrapper { display: flex; gap: 50px; align-items: start; }
+        
+        .legend { background: rgba(0,0,0,0.6); padding: 25px; border-radius: 4px; width: 280px; border: 1px solid var(--neon-cyan); box-shadow: var(--border-glow); }
+        .legend h3 { color: var(--neon-cyan); text-shadow: var(--text-glow); text-transform: uppercase; letter-spacing: 2px; }
+        .legend-row { display: flex; justify-content: space-between; padding: 8px 5px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .legend-row.active { background: var(--neon-pink); color: white; border-radius: 2px; font-weight: bold; }
+        
+        .game { text-align: center; }
+        
+        .chip-container { display: flex; justify-content: center; gap: 60px; margin-bottom: 40px; }
+        .chip { width: 130px; height: 130px; border-radius: 50%; border: 3px solid var(--neon-cyan); 
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                background: rgba(0,0,0,0.8); box-shadow: inset 0 0 15px rgba(0,242,255,0.2), 0 0 10px rgba(0,242,255,0.2);
+                font-weight: bold; font-size: 1.2rem; }
+
+        /* LOCKED TABLE WIDTH & HEIGHT */
+        .table { 
+            display: flex; gap: 20px; 
+            width: 630px; /* 5 cards (110px) + 4 gaps (20px) = 630px */
+            height: 200px; min-height: 200px; 
+            justify-content: center; margin: 40px auto; align-items: center; 
+        }
+        
+        .card { 
+            width: 110px; height: 170px; 
+            background-image: url('assets/cards.png'); 
+            background-size: 1300% 400%; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            border: 2px solid transparent; 
+            transition: transform 0.3s, border 0.3s;
+            position: relative;
+        }
+        .card.held { border: 2px solid var(--neon-pink); box-shadow: 0 0 15px rgba(255,0,127,0.5); transform: translateY(-20px); }
+        .win-star { position: absolute; top: 5px; right: 5px; color: var(--neon-cyan); font-size: 24px; text-shadow: var(--text-glow); z-index: 10; }
+        
+        /* LOCKED BUTTON GRID WIDTH */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            width: 630px; /* Matches the table perfectly */
+            margin: 20px auto;
+        }
+        
+        button { 
+            height: 55px; 
+            width: 100%;
+            font-size: 0.9rem; cursor: pointer; border-radius: 0; 
+            border: 1px solid var(--neon-cyan); background: transparent; color: var(--neon-cyan); 
+            font-family: inherit; font-weight: bold; text-transform: uppercase; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        button:hover { background: var(--neon-cyan); color: #000; box-shadow: var(--text-glow); }
+        
+        .all-in-btn { border-color: var(--neon-pink); color: var(--neon-pink); }
+        .all-in-btn:hover { background: var(--neon-pink); color: #fff; box-shadow: 0 0 15px var(--neon-pink); }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <aside class="legend" id="legend">
+            <h3>Paytable</h3>
+            <div class="legend-row" id="pay-Royal-Flush"><span>Royal Flush</span><span>x250</span></div>
+            <div class="legend-row" id="pay-Straight-Flush"><span>Straight Flush</span><span>x50</span></div>
+            <div class="legend-row" id="pay-Four-of-a-Kind"><span>Four of a Kind</span><span>x25</span></div>
+            <div class="legend-row" id="pay-Full-House"><span>Full House</span><span>x9</span></div>
+            <div class="legend-row" id="pay-Flush"><span>Flush</span><span>x6</span></div>
+            <div class="legend-row" id="pay-Straight"><span>Straight</span><span>x4</span></div>
+            <div class="legend-row" id="pay-Three-of-a-Kind"><span>Three of a Kind</span><span>x3</span></div>
+            <div class="legend-row" id="pay-Two-Pair"><span>Two Pair</span><span>x3</span></div>
+            <div class="legend-row" id="pay-Jacks-or-Better"><span>Jacks or Better</span><span>x2</span></div>
+        </aside>
+        <div class="game">
+            <div class="chip-container">
+                <div class="chip">BANK<span id="b" style="color:var(--neon-cyan)">10000</span></div>
+                <div class="chip">BET<span id="c" style="color:var(--neon-pink)">0</span></div>
+            </div>
+            
+            <div class="table" id="table"></div>
+            
+            <div class="controls-grid">
+                <button onclick="placeBet(100);updateUI()">+100</button>
+                <button onclick="placeBet(200);updateUI()">+200</button>
+                <button onclick="placeBet(500);updateUI()">+500</button>
+                <button onclick="placeBet(1000);updateUI()">+1000</button>
+                <button class="all-in-btn" onclick="placeBet(GameState.balance);updateUI()">ALL IN</button>
+                
+                <div></div>
+                <button onclick="dealRound();updateUI()">DEAL</button>
+                <button onclick="drawAndEvaluateRound();updateUI()">DRAW</button>
+                <button onclick="resetGame();updateUI()">RESET</button>
+                <div></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="pokerLogic.js"></script>
+    <script>
+        function updateUI() {
+            document.getElementById('b').textContent = GameState.balance;
+            document.getElementById('c').textContent = GameState.currentBet;
+            const t = document.getElementById('table');
+            t.innerHTML = '';
+            
+            const suitMap = { 'Clubs': 0, 'Spades': 1, 'Hearts': 2, 'Diamonds': 3 };
+            const rankMap = { '2':0, '3':1, '4':2, '5':3, '6':4, '7':5, '8':6, '9':7, '10':8, 'J':9, 'Q':10, 'K':11, 'A':12 };
+
+            GameState.playerHand.forEach((card, i) => {
+                const d = document.createElement('div');
+                d.className = `card ${GameState.heldCards[i] ? 'held' : ''}`;
+                const col = rankMap[card.rank];
+                const row = suitMap[card.suit];
+                d.style.backgroundPosition = `${(col * 100 / 12)}% ${(row * 100 / 3)}%`;
+                if (GameState.winningIndices.includes(i)) d.innerHTML += '<div class="win-star">★</div>';
+                d.onclick = () => { toggleHold(i); updateUI(); };
+                t.appendChild(d);
+            });
+            
+            document.querySelectorAll('.legend-row').forEach(r => r.classList.remove('active'));
+            if(GameState.lastWin) document.getElementById(`pay-${GameState.lastWin.replace(/ /g,'-')}`)?.classList.add('active');
+        }
+        updateUI();
+    </script>
+</body>
+</html>
