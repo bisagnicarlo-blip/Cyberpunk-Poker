@@ -135,5 +135,5 @@ function drawAndEvaluateRound() {
 }
 
 function resetGame() {
-    Object.assign(GameState, { balance: 10000, currentBet: 0, playerHand: [], heldCards: [false, false, false, false, false], lastWin: null, winningIndices: [], phase: 'IDLE' });
+    Object.assign(GameState, { balance: 15000, currentBet: 0, playerHand: [], heldCards: [false, false, false, false, false], lastWin: null, winningIndices: [], phase: 'IDLE' });
 }
